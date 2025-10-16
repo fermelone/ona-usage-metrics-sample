@@ -18,8 +18,8 @@ A Next.js dashboard for tracking environment usage across your Ona (formerly Git
    ```
 
 2. **Configure your Ona PAT**:
-   - Get your Personal Access Token from [https://app.ona.com/user/tokens](https://app.ona.com/user/tokens)
-   - Open `.env.local` and add your PAT:
+   - Get your Personal Access Token from [https://app.gitpod.io/settings/personal-access-tokens](https://app.gitpod.io/settings/personal-access-tokens)
+   - Rename `.env.example` to `.env.local` and add your PAT and Org ID:
      ```
      ONA_PAT=your_personal_access_token_here
      ONA_ORGANIZATION_ID=your_organization_id_here
