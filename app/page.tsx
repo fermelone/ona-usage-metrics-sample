@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { aggregateByUser, aggregateByEnvironment } from '@/lib/aggregation';
 import { UsageRecord, Member, UserUsage, EnvironmentUsage, GroupBy } from '@/lib/types';
@@ -300,9 +300,8 @@ export default function Dashboard() {
               <TableBody>
                 {groupBy === 'user' ? (
                   userUsages.map((user) => (
-                    <>
+                    <React.Fragment key={user.userId}>
                       <TableRow
-                        key={user.userId}
                         className="cursor-pointer"
                         onClick={() => toggleRow(user.userId)}
                       >
@@ -344,15 +343,14 @@ export default function Dashboard() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </React.Fragment>
                   ))
                 ) : (
                   envUsages.map((env) => {
                     const rowKey = `${env.environmentId}-${env.userId}`;
                     return (
-                      <>
+                      <React.Fragment key={rowKey}>
                         <TableRow
-                          key={rowKey}
                           className="cursor-pointer"
                           onClick={() => toggleRow(rowKey)}
                         >
@@ -402,7 +400,7 @@ export default function Dashboard() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })
                 )}
