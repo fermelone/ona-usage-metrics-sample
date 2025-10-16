@@ -43,10 +43,11 @@ export async function GET(request: NextRequest) {
     }
 
     let members: any[] = [];
-    if (organizationId) {
+    const orgId = organizationId || process.env.ONA_ORGANIZATION_ID;
+    if (orgId) {
       try {
         for await (const member of client.organizations.listMembers({
-          organizationId,
+          organizationId: orgId,
           pagination: {
             pageSize: 100,
           },

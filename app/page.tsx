@@ -77,9 +77,8 @@ export default function Dashboard() {
 
     try {
       const { startTime, endTime } = getDateRangeValues();
-      const orgId = process.env.NEXT_PUBLIC_ONA_ORGANIZATION_ID || '';
       
-      const cacheKey = `${startTime}-${endTime}-${orgId}`;
+      const cacheKey = `${startTime}-${endTime}`;
       const cachedData = cache.get(cacheKey);
       const now = Date.now();
 
@@ -94,10 +93,6 @@ export default function Dashboard() {
         startTime,
         endTime,
       });
-
-      if (orgId) {
-        params.append('organizationId', orgId);
-      }
 
       const response = await fetch(`/api/usage?${params.toString()}`);
       
