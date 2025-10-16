@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Calendar, Users, Box } from 'lucide-react';
 import { aggregateByUser, aggregateByEnvironment } from '@/lib/aggregation';
 import { UsageRecord, Member, UserUsage, EnvironmentUsage, GroupBy } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 type DateRange = 'today' | 'yesterday' | '7d' | '30d' | '6m' | '12m' | 'custom';
 
@@ -169,81 +170,92 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <div className="min-h-screen bg-background p-4 sm:p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Ona Usage Metrics</h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-2 text-sm">
             Track environment usage across your organization
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Filters</CardTitle>
-            <CardDescription>Select date range and grouping options</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Date Range</label>
-              <div className="flex flex-wrap gap-2">
-                {dateRangeOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={dateRange === option.value ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setDateRange(option.value)}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
+        <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date Range</span>
+            </div>
+            <ToggleGroup
+              type="single"
+              value={dateRange}
+              onValueChange={(value) => value && setDateRange(value as DateRange)}
+              className="flex-wrap"
+            >
+              {dateRangeOptions.map((option) => (
+                <ToggleGroupItem
+                  key={option.value}
+                  value={option.value}
+                  size="sm"
+                  className="text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  {option.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+
+          <div className="flex items-center gap-2 border-t pt-3 sm:border-t-0 sm:border-l sm:pl-4 sm:pt-0">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Group By</span>
+            <ToggleGroup
+              type="single"
+              value={groupBy}
+              onValueChange={(value) => value && setGroupBy(value as GroupBy)}
+            >
+              <ToggleGroupItem
+                value="user"
+                size="sm"
+                className="text-xs data-[state=on]:bg-secondary data-[state=on]:text-secondary-foreground"
+              >
+                <Users className="h-3 w-3 mr-1" />
+                User
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="environment"
+                size="sm"
+                className="text-xs data-[state=on]:bg-secondary data-[state=on]:text-secondary-foreground"
+              >
+                <Box className="h-3 w-3 mr-1" />
+                Environment
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        </div>
+
+        {dateRange === 'custom' && (
+          <div className="rounded-lg border bg-muted/20 p-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Start Date</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">End Date</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
               </div>
             </div>
-
-            {dateRange === 'custom' && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Start Date</label>
-                  <input
-                    type="date"
-                    value={customStartDate}
-                    onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">End Date</label>
-                  <input
-                    type="date"
-                    value={customEndDate}
-                    onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Group By</label>
-              <div className="flex gap-2">
-                <Button
-                  variant={groupBy === 'user' ? 'secondary' : 'outline'}
-                  size="sm"
-                  onClick={() => setGroupBy('user')}
-                >
-                  User
-                </Button>
-                <Button
-                  variant={groupBy === 'environment' ? 'secondary' : 'outline'}
-                  size="sm"
-                  onClick={() => setGroupBy('environment')}
-                >
-                  Environment
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
         {loading && (
           <Card>
