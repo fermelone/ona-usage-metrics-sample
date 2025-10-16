@@ -172,11 +172,18 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Ona Usage Metrics</h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            Track environment usage across your organization
-          </p>
+        <div className="flex items-center gap-3">
+          <img 
+            src="/ona-symbol-black.svg" 
+            alt="Ona Logo" 
+            className="h-9"
+          />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Ona Usage Metrics</h1>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Track environment usage across your organization
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
