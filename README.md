@@ -10,6 +10,10 @@ A Next.js dashboard for tracking environment usage across your Ona (formerly Git
 - **Smart Caching**: Reduces unnecessary API calls by caching responses for 5 minutes
 - **Clean UI**: Simple white background with black text and accent colors (#1F53FF and #1EA41D)
 
+<p align="center">
+<img width="800" alt="image" src="https://github.com/user-attachments/assets/ea7f88e2-0093-4596-b425-a116675df1b1" />
+</p>p
+
 ## Setup
 
 1. **Install dependencies**:
