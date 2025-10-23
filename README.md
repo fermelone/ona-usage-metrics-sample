@@ -12,7 +12,7 @@ A Next.js dashboard for tracking environment usage across your Ona (formerly Git
 
 <p align="center">
 <img width="800" alt="image" src="https://github.com/user-attachments/assets/ea7f88e2-0093-4596-b425-a116675df1b1" />
-</p>p
+</p>
 
 ## Setup
 
