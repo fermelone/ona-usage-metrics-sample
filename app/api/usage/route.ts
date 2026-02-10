@@ -59,8 +59,90 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const projectIds = new Set<string>();
+    usageRecords.forEach((record: any) => {
+      if (record.projectId) {
+        projectIds.add(record.projectId);
+      }
+    });
+
+    const projectMap = new Map<string, string>();
+    if (projectIds.size > 0) {
+      try {
+        // Fetch all projects and filter locally since the API filter may not return all projects
+        for await (const project of client.projects.list({
+          pagination: {
+            pageSize: 100,
+          },
+        })) {
+          if (project.id && projectIds.has(project.id)) {
+            // Use project name if available, otherwise use the project ID
+            const projectName = project.metadata?.name?.trim();
+            projectMap.set(project.id, projectName || project.id);
+          }
+        }
+        
+        // For projects not found in list, try to retrieve individually
+        const missingProjectIds = Array.from(projectIds).filter(id => !projectMap.has(id));
+        
+        for (const projectId of missingProjectIds) {
+          // Handle special null UUID case
+          if (projectId === '00000000-0000-0000-0000-000000000000') {
+            projectMap.set(projectId, 'No Project');
+            continue;
+          }
+
+          // Try to retrieve individual project details
+          try {
+            const projectResponse = await client.projects.retrieve({ projectId });
+            const projectName = projectResponse.project?.metadata?.name?.trim();
+            if (projectName) {
+              projectMap.set(projectId, projectName);
+            } else {
+              // Project exists but has no name
+              const shortId = projectId.substring(0, 8);
+              projectMap.set(projectId, `Unnamed Project (${shortId}...)`);
+            }
+          } catch (retrieveError: any) {
+            // Handle different error scenarios
+            const shortId = projectId.substring(0, 8);
+            console.log(`Error retrieving project ${projectId}:`, {
+              status: retrieveError.status,
+              code: retrieveError.code,
+              message: retrieveError.message
+            });
+            
+            if (retrieveError.status === 403 || retrieveError.code === 'permission_denied') {
+              // Service account doesn't have permission to access this project
+              projectMap.set(projectId, `Restricted Project (${shortId}...)`);
+            } else if (retrieveError.status === 404 || retrieveError.code === 'not_found') {
+              // Project doesn't exist
+              projectMap.set(projectId, `Unknown Project (${shortId}...)`);
+            } else {
+              // Other errors - show as inaccessible
+              projectMap.set(projectId, `Inaccessible Project (${shortId}...)`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+        // If list fails entirely, mark all projects as inaccessible
+        projectIds.forEach(id => {
+          if (!projectMap.has(id)) {
+            const shortId = id.substring(0, 8);
+            projectMap.set(id, `Inaccessible Project (${shortId}...)`);
+          }
+        });
+      }
+    }
+
+    const enrichedRecords = usageRecords.map((record: any) => ({
+      ...record,
+      projectName: record.projectId ? projectMap.get(record.projectId) : undefined,
+    }));
+
     return NextResponse.json({
-      usageRecords,
+      usageRecords: enrichedRecords,
       members,
     });
   } catch (error: any) {

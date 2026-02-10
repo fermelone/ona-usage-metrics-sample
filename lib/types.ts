@@ -4,6 +4,7 @@ export interface UsageRecord {
   environmentClassId?: string;
   environmentId?: string;
   projectId?: string;
+  projectName?: string;
   runnerId?: string;
   stoppedAt?: string;
   userId?: string;
@@ -39,4 +40,20 @@ export interface SessionInfo {
   durationHours: number;
 }
 
-export type GroupBy = 'user' | 'environment';
+export interface ProjectUsage {
+  projectId: string;
+  projectName: string;
+  totalHours: number;
+  users: {
+    userId: string;
+    userName: string;
+    email: string;
+    totalHours: number;
+  }[];
+  environments: {
+    environmentId: string;
+    totalHours: number;
+  }[];
+}
+
+export type GroupBy = 'user' | 'environment' | 'project';

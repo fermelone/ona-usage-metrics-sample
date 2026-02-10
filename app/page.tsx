@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { aggregateByUser, aggregateByEnvironment } from '@/lib/aggregation';
-import { UsageRecord, Member, UserUsage, EnvironmentUsage, GroupBy } from '@/lib/types';
+import React, { useState, useEffect } from 'react';
+import { aggregateByUser, aggregateByEnvironment, aggregateByProject } from '@/lib/aggregation';
+import { UsageRecord, Member, UserUsage, EnvironmentUsage, ProjectUsage, GroupBy } from '@/lib/types';
 
 type DateRange = 'today' | 'yesterday' | '7d' | '30d' | '6m' | '12m' | 'custom';
 
@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [members, setMembers] = useState<Member[]>([]);
   const [userUsages, setUserUsages] = useState<UserUsage[]>([]);
   const [envUsages, setEnvUsages] = useState<EnvironmentUsage[]>([]);
+  const [projectUsages, setProjectUsages] = useState<ProjectUsage[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [cache, setCache] = useState<Map<string, CacheEntry>>(new Map());
 
@@ -71,7 +72,7 @@ export default function Dashboard() {
     return { startTime, endTime };
   };
 
-  const fetchUsageData = async () => {
+  const fetchUsageData = async (forceRefresh: boolean = false) => {
     setLoading(true);
     setError(null);
 
@@ -82,7 +83,7 @@ export default function Dashboard() {
       const cachedData = cache.get(cacheKey);
       const now = Date.now();
 
-      if (cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
+      if (!forceRefresh && cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
         setUsageRecords(cachedData.usageRecords);
         setMembers(cachedData.members);
         setLoading(false);
@@ -119,6 +120,10 @@ export default function Dashboard() {
     }
   };
 
+  const handleRefresh = () => {
+    fetchUsageData(true);
+  };
+
   useEffect(() => {
     if (dateRange !== 'custom' || (customStartDate && customEndDate)) {
       fetchUsageData();
@@ -129,8 +134,10 @@ export default function Dashboard() {
     if (usageRecords.length > 0) {
       if (groupBy === 'user') {
         setUserUsages(aggregateByUser(usageRecords, members));
-      } else {
+      } else if (groupBy === 'environment') {
         setEnvUsages(aggregateByEnvironment(usageRecords, members));
+      } else if (groupBy === 'project') {
+        setProjectUsages(aggregateByProject(usageRecords, members));
       }
     }
   }, [usageRecords, members, groupBy]);
@@ -156,9 +163,75 @@ export default function Dashboard() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', color: 'black', padding: '2rem' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem' }}>
-          Ona Environment Usage Dashboard
-        </h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>
+            Ona Environment Usage Dashboard
+          </h1>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            style={{
+              padding: '0.75rem 1.5rem',
+              border: '1px solid #1F53FF',
+              backgroundColor: loading ? '#e0e0e0' : 'white',
+              color: loading ? '#999' : '#1F53FF',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontWeight: '600',
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.currentTarget.style.backgroundColor = '#1F53FF';
+                e.currentTarget.style.color = 'white';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) {
+                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.color = '#1F53FF';
+              }
+            }}
+          >
+            <svg 
+              width="16" 
+              height="16" 
+              viewBox="0 0 16 16" 
+              fill="none" 
+              style={{ 
+                transform: loading ? 'rotate(0deg)' : 'rotate(0deg)',
+                animation: loading ? 'spin 1s linear infinite' : 'none'
+              }}
+            >
+              <path 
+                d="M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round"
+              />
+              <path 
+                d="M8 2V5M8 2L10 4M8 2L6 4" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `
+        }} />
 
         <div style={{ 
           backgroundColor: '#f9f9f9', 
@@ -266,6 +339,20 @@ export default function Dashboard() {
               >
                 Environment
               </button>
+              <button
+                onClick={() => setGroupBy('project')}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: groupBy === 'project' ? '2px solid #1EA41D' : '1px solid #ccc',
+                  backgroundColor: groupBy === 'project' ? '#1EA41D' : 'white',
+                  color: groupBy === 'project' ? 'white' : 'black',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: groupBy === 'project' ? '600' : '400',
+                }}
+              >
+                Project
+              </button>
             </div>
           </div>
         </div>
@@ -312,9 +399,8 @@ export default function Dashboard() {
                 </thead>
                 <tbody>
                   {userUsages.map((user) => (
-                    <>
+                    <React.Fragment key={user.userId}>
                       <tr 
-                        key={user.userId}
                         style={{ 
                           borderBottom: '1px solid #e0e0e0',
                           cursor: 'pointer',
@@ -369,11 +455,11 @@ export default function Dashboard() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
-            ) : (
+            ) : groupBy === 'environment' ? (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f5f5f5', borderBottom: '2px solid #e0e0e0' }}>
@@ -388,9 +474,8 @@ export default function Dashboard() {
                   {envUsages.map((env) => {
                     const rowKey = `${env.environmentId}-${env.userId}`;
                     return (
-                      <>
+                      <React.Fragment key={rowKey}>
                         <tr 
-                          key={rowKey}
                           style={{ 
                             borderBottom: '1px solid #e0e0e0',
                             cursor: 'pointer',
@@ -448,9 +533,126 @@ export default function Dashboard() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })}
+                </tbody>
+              </table>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f5f5f5', borderBottom: '2px solid #e0e0e0' }}>
+                    <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Project Name</th>
+                    <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600' }}>Total Hours</th>
+                    <th style={{ padding: '1rem', textAlign: 'center', fontWeight: '600' }}>Users</th>
+                    <th style={{ padding: '1rem', textAlign: 'center', fontWeight: '600' }}>Environments</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projectUsages.map((project) => (
+                    <React.Fragment key={project.projectId}>
+                      <tr 
+                        style={{ 
+                          borderBottom: '1px solid #e0e0e0',
+                          cursor: 'pointer',
+                          backgroundColor: expandedRows.has(project.projectId) ? '#f9f9f9' : 'white'
+                        }}
+                        onClick={() => toggleRow(project.projectId)}
+                      >
+                        <td style={{ padding: '1rem' }}>
+                          {project.projectName}
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: '600' }}>
+                          {formatHours(project.totalHours)}
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <span style={{ 
+                            backgroundColor: '#FF8A00',
+                            color: 'white',
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '12px',
+                            fontSize: '0.875rem'
+                          }}>
+                            {project.users.length}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <span style={{ 
+                            backgroundColor: '#1F53FF',
+                            color: 'white',
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '12px',
+                            fontSize: '0.875rem'
+                          }}>
+                            {project.environments.length}
+                          </span>
+                        </td>
+                      </tr>
+                      {expandedRows.has(project.projectId) && (
+                        <tr>
+                          <td colSpan={4} style={{ padding: '0', backgroundColor: '#fafafa' }}>
+                            <div style={{ padding: '1rem', paddingLeft: '3rem' }}>
+                              <div style={{ 
+                                marginBottom: '1rem',
+                                padding: '0.5rem',
+                                backgroundColor: 'white',
+                                borderRadius: '4px',
+                                border: '1px solid #e0e0e0'
+                              }}>
+                                <div style={{ fontSize: '0.875rem', color: '#666' }}>Project ID</div>
+                                <div style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>{project.projectId}</div>
+                              </div>
+                              <h4 style={{ marginBottom: '0.5rem', fontWeight: '600' }}>Users:</h4>
+                              {project.users.map((user) => (
+                                <div 
+                                  key={user.userId}
+                                  style={{ 
+                                    marginBottom: '0.5rem',
+                                    padding: '0.5rem',
+                                    backgroundColor: 'white',
+                                    borderRadius: '4px',
+                                    border: '1px solid #e0e0e0'
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <div>
+                                      <div style={{ fontWeight: '600' }}>{user.userName}</div>
+                                      <div style={{ fontSize: '0.875rem', color: '#666' }}>{user.email}</div>
+                                    </div>
+                                    <span style={{ fontWeight: '600' }}>
+                                      {formatHours(user.totalHours)} hours
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                              <h4 style={{ marginTop: '1rem', marginBottom: '0.5rem', fontWeight: '600' }}>Environments:</h4>
+                              {project.environments.map((env) => (
+                                <div 
+                                  key={env.environmentId}
+                                  style={{ 
+                                    marginBottom: '0.5rem',
+                                    padding: '0.5rem',
+                                    backgroundColor: 'white',
+                                    borderRadius: '4px',
+                                    border: '1px solid #e0e0e0'
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                                      {env.environmentId}
+                                    </span>
+                                    <span style={{ fontWeight: '600' }}>
+                                      {formatHours(env.totalHours)} hours
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
                 </tbody>
               </table>
             )}
