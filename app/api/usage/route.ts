@@ -69,13 +69,16 @@ export async function GET(request: NextRequest) {
     const projectMap = new Map<string, string>();
     if (projectIds.size > 0) {
       try {
-        // Fetch all projects and filter locally since the API filter may not return all projects
+        // Use API filter to fetch only the projects we need (prevents timeout with large orgs)
         for await (const project of client.projects.list({
+          filter: {
+            projectIds: Array.from(projectIds),
+          },
           pagination: {
             pageSize: 100,
           },
         })) {
-          if (project.id && projectIds.has(project.id)) {
+          if (project.id) {
             // Use project name if available, otherwise use the project ID
             const projectName = project.metadata?.name?.trim();
             projectMap.set(project.id, projectName || project.id);
